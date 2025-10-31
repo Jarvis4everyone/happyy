@@ -14,6 +14,7 @@ class TextToSpeechService extends EventEmitter {
     this.inFlight = 0;
     this.maxConcurrent = (process.env.TTS_PROVIDER === 'cartesia') ? 1 : 3;
     this.preGeneratedWelcomeAudio = null; // Store pre-generated welcome message audio
+    this.preGeneratedWelcomeText = null; // Store the text that corresponds to pre-generated audio
   }
   
   // Pre-generate welcome message audio (called at server startup)
@@ -22,11 +23,13 @@ class TextToSpeechService extends EventEmitter {
       console.log('Pre-generating welcome message audio...'.green);
       const base64Audio = await this.generateAudioForText(welcomeText);
       this.preGeneratedWelcomeAudio = base64Audio;
+      this.preGeneratedWelcomeText = welcomeText; // Store the text for comparison
       console.log('Welcome message audio pre-generated successfully!'.green);
       return base64Audio;
     } catch (err) {
       console.error('Failed to pre-generate welcome message:', err);
       this.preGeneratedWelcomeAudio = null;
+      this.preGeneratedWelcomeText = null;
       return null;
     }
   }
@@ -120,9 +123,10 @@ class TextToSpeechService extends EventEmitter {
     const { partialResponseIndex, partialResponse } = gptReply;
 
     if (!partialResponse) { return; }
-    
-    // For welcome message (index null), check if we have pre-generated audio
-    if (partialResponseIndex === null && this.preGeneratedWelcomeAudio) {
+
+    // For welcome message (index null), check if we have pre-generated audio and it matches the text
+    if (partialResponseIndex === null && this.preGeneratedWelcomeAudio && 
+        this.preGeneratedWelcomeText === partialResponse) {
       console.log('Using pre-generated welcome message audio (instant playback)'.green);
       // Emit immediately with pre-generated audio
       this.emit('speech', null, this.preGeneratedWelcomeAudio, partialResponse, interactionCount);
