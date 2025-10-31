@@ -43,18 +43,41 @@ function broadcastLog(message, type = 'info', callSid = null) {
 
 const PORT = process.env.PORT || 3000;
 
+// Function to load welcome message from prompts.json
+function loadWelcomeMessage() {
+    try {
+        const promptsPath = path.join(__dirname, 'prompts.json');
+        const promptsData = fs.readFileSync(promptsPath, 'utf8');
+        const prompts = JSON.parse(promptsData);
+        return prompts.assistantPrompt || 'नमस्ते! मैं Happy बोल रहा हूँ।';
+    } catch (error) {
+        console.error('Error loading welcome message, using default:'.yellow, error.message);
+        return 'नमस्ते! मैं Happy बोल रहा हूँ।';
+    }
+}
+
 // Pre-generate welcome message audio at server startup for instant playback
-const welcomeMessageText = 'नमस्ते! मैं Happy बोल रहा हूँ • मैं मनोज यादव जी की टीम से हूँ • JDU पार्टी की ओर से आपसे बात कर रहा हूँ • आपके इलाके में कौन-सी समस्याएँ हैं? • जैसे सड़क • बिजली • पानी • शिक्षा • नौकरी • या स्वास्थ्य सेवाएँ?';
+let welcomeMessageText = loadWelcomeMessage();
 let preGeneratedWelcomeAudio = null;
 
-// Initialize TTS service for pre-generation
-const preGenTtsService = new TextToSpeechService({});
-preGenTtsService.preGenerateWelcomeMessage(welcomeMessageText).then((audio) => {
-  preGeneratedWelcomeAudio = audio;
-  console.log('✓ Welcome message pre-generated and ready for instant playback'.green);
-}).catch((err) => {
-  console.error('Failed to pre-generate welcome message:', err);
-});
+// Function to regenerate welcome message audio
+async function regenerateWelcomeMessage() {
+    try {
+        welcomeMessageText = loadWelcomeMessage();
+        const preGenTtsService = new TextToSpeechService({});
+        const audio = await preGenTtsService.preGenerateWelcomeMessage(welcomeMessageText);
+        preGeneratedWelcomeAudio = audio;
+        console.log('✓ Welcome message regenerated and ready for instant playback'.green);
+        return audio;
+    } catch (err) {
+        console.error('Failed to regenerate welcome message:'.yellow, err);
+        preGeneratedWelcomeAudio = null;
+        return null;
+    }
+}
+
+// Initialize TTS service for pre-generation at startup
+regenerateWelcomeMessage();
 
 // Pre-warm Deepgram connection (establish connection early to reduce delay on first call)
 console.log('Pre-warming Deepgram connection...'.yellow);
@@ -158,7 +181,7 @@ app.get('/api/prompt', (req, res) => {
 });
 
 // API endpoint to update prompts
-app.post('/api/prompt', (req, res) => {
+app.post('/api/prompt', async (req, res) => {
     try {
         const { systemPrompt, assistantPrompt } = req.body;
         
@@ -177,10 +200,13 @@ app.post('/api/prompt', (req, res) => {
 
         fs.writeFileSync(promptsPath, JSON.stringify(prompts, null, 2), 'utf8');
         
+        // Regenerate welcome message audio with new assistant prompt
+        await regenerateWelcomeMessage();
+        
         broadcastLog('AI prompts updated successfully', 'success');
         console.log('Prompts updated successfully'.green);
         
-        res.json({ success: true, message: 'Prompts updated successfully' });
+        res.json({ success: true, message: 'Prompts updated successfully. Welcome message regenerated for new calls.' });
     } catch (error) {
         console.error('Error updating prompts:', error);
         broadcastLog(`Error updating prompts: ${error.message}`, 'error');
@@ -230,9 +256,10 @@ app.ws('/connection', (ws) => {
     const transcriptionService = new TranscriptionService();
     const ttsService = new TextToSpeechService({});
     
-    // Set pre-generated welcome audio if available
+    // Set pre-generated welcome audio and text if available
     if (preGeneratedWelcomeAudio) {
       ttsService.preGeneratedWelcomeAudio = preGeneratedWelcomeAudio;
+      ttsService.preGeneratedWelcomeText = welcomeMessageText;
     }
   
     let marks = [];
@@ -255,6 +282,8 @@ app.ws('/connection', (ws) => {
         broadcastLog(logMsg, 'info', callSid);
         
         // Send welcome message IMMEDIATELY when call connects (uses pre-generated audio if available)
+        // Load the latest welcome message text from prompts.json for this call
+        const currentWelcomeMessage = loadWelcomeMessage();
         const welcomeMsg = 'Sending welcome message immediately...';
         console.log(welcomeMsg.green);
         broadcastLog(welcomeMsg, 'success', callSid);
@@ -266,7 +295,8 @@ app.ws('/connection', (ws) => {
           broadcastLog('AI speaking (welcome) - STT paused', 'system', callSid);
         }
         
-        ttsService.generate({partialResponseIndex: null, partialResponse: welcomeMessageText}, 0);
+        // Use the latest welcome message text (TTS service will use pre-generated audio if available and matching)
+        ttsService.generate({partialResponseIndex: null, partialResponse: currentWelcomeMessage}, 0);
         
         // Note: Deepgram STT connection happens in parallel (in background) and does not block welcome message
 
