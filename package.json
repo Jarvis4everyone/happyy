@@ -1,0 +1,42 @@
+{
+  "name": "happy-ai-call-system",
+  "version": "2.0.0",
+  "description": "AI-powered voice call management system with web dashboard, real-time logs, and intelligent conversation handling",
+  "main": "index.js",
+  "scripts": {
+    "inbound": "node ./scripts/inbound-call.js",
+    "outbound": "node ./scripts/outbound-call.js",
+    "test": "jest",
+    "dev": "nodemon app.js",
+    "start": "node app.js"
+  },
+  "keywords": [
+    "ai",
+    "voice-calls",
+    "twilio",
+    "openai",
+    "deepgram",
+    "voice-assistant",
+    "call-management"
+  ],
+  "author": "Shreshth Kaushik",
+  "license": "MIT",
+  "dependencies": {
+    "@deepgram/sdk": "^3.3.4",
+    "colors": "^1.4.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.19.2",
+    "express-ws": "^5.0.2",
+    "node-fetch": "^2.7.0",
+    "openai": "^4.20.1",
+    "twilio": "^4.19.3",
+    "uuid": "^9.0.1",
+    "wavefile": "^11.0.0"
+  },
+  "devDependencies": {
+    "@flydotio/dockerfile": "^0.4.11",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2"
+  }
+}

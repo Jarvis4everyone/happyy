@@ -1,0 +1,61 @@
+# Docker ignore file
+# Excludes files that shouldn't be in Docker image
+
+# Dependencies
+node_modules
+npm-debug.log
+package-lock.json
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+RENDER_DEPLOY.md
+*.md
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+test
+*.test.js
+coverage
+.nyc_output
+
+# Logs
+logs
+*.log
+
+# Build artifacts
+dist
+build
+.cache
+
+# Render/Fly config
+render.yaml
+fly.toml
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Misc
+.sfdr
+sfdrs.txt

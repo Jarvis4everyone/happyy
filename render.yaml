@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: happy-ai-call-system
+    runtime: docker
+    plan: starter
+    region: oregon
+    healthCheckPath: /incoming
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      # Add your environment variables in Render dashboard:
+      # - SERVER (your render service URL without https://)
+      # - TWILIO_ACCOUNT_SID
+      # - TWILIO_AUTH_TOKEN
+      # - FROM_NUMBER
+      # - DEEPGRAM_API_KEY
+      # - OPENAI_API_KEY
+      # - OPENAI_MODEL (optional, defaults to gpt-4o-mini)
+      # - VOICE_MODEL (optional, for Deepgram TTS)
+      # - TTS_PROVIDER (optional, defaults to deepgram)
+      # - RECORDING_ENABLED (optional, set to 'true' to enable)
+

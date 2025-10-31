@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy AI - Call Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="page">
+        <div class="login-container">
+            <h1>Happy AI Call System</h1>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+                <div id="loginError" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard Page -->
+    <div id="dashboardPage" class="page hidden">
+        <div class="dashboard-wrapper">
+            <!-- Header -->
+            <header class="dashboard-header">
+                <div class="header-content">
+                    <div class="logo-section">
+                        <h1>Happy AI</h1>
+                        <span class="subtitle">Call Management System</span>
+                    </div>
+                    <button id="logoutBtn" class="btn btn-secondary">
+                        <span class="btn-icon">🚪</span>
+                        Logout
+                    </button>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <div class="dashboard-main">
+                <!-- Left Sidebar - Call Controls -->
+                <aside class="sidebar">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>📞 Make a Call</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="phoneNumber">Phone Number</label>
+                                <div class="phone-input-group">
+                                    <span class="phone-prefix">+91</span>
+                                    <input 
+                                        type="tel" 
+                                        id="phoneNumber" 
+                                        placeholder="Enter 10 digit number" 
+                                        maxlength="10" 
+                                        required
+                                        pattern="[0-9]{10}"
+                                    >
+                                </div>
+                                <small class="form-hint">Enter 10 digit Indian mobile number</small>
+                            </div>
+
+                            <div id="callStatus" class="call-status"></div>
+
+                            <div class="button-group">
+                                <button id="callBtn" class="btn btn-primary btn-large">
+                                    <span class="btn-icon">📞</span>
+                                    Make Call
+                                </button>
+                                <button id="stopCallBtn" class="btn btn-danger btn-large" disabled>
+                                    <span class="btn-icon">⏹️</span>
+                                    Stop Call
+                                </button>
+                                <button id="newCallBtn" class="btn btn-success btn-large hidden">
+                                    <span class="btn-icon">🔄</span>
+                                    New Call
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Call Info -->
+                    <div id="callInfo" class="card hidden">
+                        <div class="card-header">
+                            <h3>📊 Call Information</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-item">
+                                <span class="info-label">Status:</span>
+                                <span id="callInfoStatus" class="info-value">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Number:</span>
+                                <span id="callInfoNumber" class="info-value">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Duration:</span>
+                                <span id="callInfoDuration" class="info-value">00:00</span>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Right Main Area - Logs -->
+                <main class="main-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-header-content">
+                                <h2>📋 Live Call Logs</h2>
+                                <div class="logs-badge" id="logsCount">0 logs</div>
+                            </div>
+                            <div class="card-actions">
+                                <button id="clearLogsBtn" class="btn btn-secondary btn-small">
+                                    <span class="btn-icon">🗑️</span>
+                                    Clear
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body logs-wrapper">
+                            <div id="logsContainer" class="logs-container">
+                                <div class="log-entry info">
+                                    <span class="log-time">[System]</span>
+                                    Waiting for call to start...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
