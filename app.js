@@ -11,7 +11,6 @@ const { StreamService } = require('./services/stream-service');
 const { TranscriptionService } = require('./services/transcription-service');
 const { TextToSpeechService } = require('./services/tts-service');
 const { recordingService } = require('./services/recording-service');
-const { initializeBeep, getBeepAudio } = require('./services/beep-service');
 const fs = require('fs');
 
 const VoiceResponse = require('twilio').twiml.VoiceResponse;
@@ -56,9 +55,6 @@ preGenTtsService.preGenerateWelcomeMessage(welcomeMessageText).then((audio) => {
 }).catch((err) => {
   console.error('Failed to pre-generate welcome message:', err);
 });
-
-// Initialize beep service at startup
-initializeBeep();
 
 // Pre-warm Deepgram connection (establish connection early to reduce delay on first call)
 console.log('Pre-warming Deepgram connection...'.yellow);
@@ -318,24 +314,6 @@ app.ws('/connection', (ws) => {
             event: 'clear',
           })
         );
-      }
-    });
-    
-    // Play beep when STT starts
-    transcriptionService.on('sttStarted', () => {
-      const beepAudio = getBeepAudio();
-      if (beepAudio && streamSid) {
-        streamService.sendAudio(beepAudio);
-        broadcastLog('STT started - beep played', 'system', callSid);
-      }
-    });
-    
-    // Play beep when STT stops
-    transcriptionService.on('sttStopped', () => {
-      const beepAudio = getBeepAudio();
-      if (beepAudio && streamSid) {
-        streamService.sendAudio(beepAudio);
-        broadcastLog('STT stopped - beep played', 'system', callSid);
       }
     });
   
