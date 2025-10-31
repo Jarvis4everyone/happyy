@@ -192,6 +192,8 @@ app.ws('/connection', (ws) => {
   
     let marks = [];
     let interactionCount = 0;
+    let isAiSpeaking = false; // Track when AI is speaking
+    const INTERRUPTION_ENABLED = process.env.INTERRUPTION_ENABLED === 'true';
   
     // Incoming from MediaStream
     ws.on('message', function message(data) {
@@ -211,6 +213,14 @@ app.ws('/connection', (ws) => {
         const welcomeMsg = 'Sending welcome message immediately...';
         console.log(welcomeMsg.green);
         broadcastLog(welcomeMsg, 'success', callSid);
+        
+        // Mark that AI is starting to speak (disable STT if interruption is disabled)
+        if (!INTERRUPTION_ENABLED && !isAiSpeaking) {
+          isAiSpeaking = true;
+          transcriptionService.pauseListening();
+          broadcastLog('AI speaking (welcome) - STT paused', 'system', callSid);
+        }
+        
         ttsService.generate({partialResponseIndex: null, partialResponse: welcomeMessageText}, 0);
         
         // Note: Deepgram STT connection happens in parallel (in background) and does not block welcome message
@@ -221,24 +231,35 @@ app.ws('/connection', (ws) => {
           console.error('Recording service error:', err);
         });
       } else if (msg.event === 'media') {
-        transcriptionService.send(msg.media.payload);
+        // Only send audio to transcription service if AI is not speaking (when interruption disabled)
+        if (INTERRUPTION_ENABLED || !isAiSpeaking) {
+          transcriptionService.send(msg.media.payload);
+        }
       } else if (msg.event === 'mark') {
         const label = msg.mark.name;
         const logMsg = `Twilio -> Audio completed mark (${msg.sequenceNumber}): ${label}`;
         console.log(logMsg.red);
         broadcastLog(logMsg, 'system', callSid);
         marks = marks.filter(m => m !== msg.mark.name);
+        
+        // If no more audio marks and AI was speaking, re-enable STT (when interruption disabled)
+        if (!INTERRUPTION_ENABLED && isAiSpeaking && marks.length === 0) {
+          isAiSpeaking = false;
+          transcriptionService.resumeListening();
+          broadcastLog('AI finished speaking - STT resumed', 'system', callSid);
+        }
       } else if (msg.event === 'stop') {
         const logMsg = `Twilio -> Media stream ${streamSid} ended.`;
         console.log(logMsg.underline.red);
         broadcastLog(logMsg, 'warning', callSid);
         activeCalls.delete(callSid);
+        isAiSpeaking = false; // Reset speaking state
       }
     });
   
     transcriptionService.on('utterance', async (text) => {
-      // This is a bit of a hack to filter out empty utterances
-      if(marks.length > 0 && text?.length > 5) {
+      // Only handle interruption if enabled in environment variable
+      if (INTERRUPTION_ENABLED && marks.length > 0 && text?.length > 5 && !isAiSpeaking) {
         const logMsg = 'Twilio -> Interruption, Clearing stream';
         console.log(logMsg.red);
         broadcastLog(logMsg, 'warning', callSid);
@@ -264,6 +285,14 @@ app.ws('/connection', (ws) => {
       const logMsg = `Interaction ${icount}: GPT -> TTS: ${gptReply.partialResponse}`;
       console.log(logMsg.green);
       broadcastLog(logMsg, 'success', callSid);
+      
+      // Mark that AI is starting to speak (disable STT if interruption is disabled)
+      if (!INTERRUPTION_ENABLED && !isAiSpeaking) {
+        isAiSpeaking = true;
+        transcriptionService.pauseListening();
+        broadcastLog('AI speaking - STT paused', 'system', callSid);
+      }
+      
       ttsService.generate(gptReply, icount);
     });
   

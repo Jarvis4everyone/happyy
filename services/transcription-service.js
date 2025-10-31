@@ -15,9 +15,20 @@ class TranscriptionService extends EventEmitter {
     this.lastInterim = '';
     this.silenceTimer = null;
     this.reconnecting = false;
+    this.listeningPaused = false; // Track if listening is paused
     
     // Initialize connection
     this.connect();
+  }
+  
+  // Pause listening (stop processing audio)
+  pauseListening() {
+    this.listeningPaused = true;
+  }
+  
+  // Resume listening (start processing audio again)
+  resumeListening() {
+    this.listeningPaused = false;
   }
 
   connect() {
@@ -211,6 +222,11 @@ class TranscriptionService extends EventEmitter {
    * @param {String} payload A base64 MULAW/8000 audio stream
    */
   send(payload) {
+    // Don't send audio if listening is paused
+    if (this.listeningPaused) {
+      return;
+    }
+    
     if (!this.dgConnection) {
       // Connection not initialized yet, buffer the payload
       this.pendingPayloads.push(payload);
