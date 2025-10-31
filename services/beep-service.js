@@ -2,11 +2,6 @@ require('colors');
 const fs = require('fs');
 const path = require('path');
 const { WaveFile } = require('wavefile');
-const ffmpeg = require('fluent-ffmpeg');
-const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
-
-// Set ffmpeg path
-ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 let beepAudioBase64 = null;
 
@@ -37,69 +32,55 @@ function linearToMuLawSample(sample) {
 }
 
 /**
- * Convert MP3 to MULAW 8kHz base64 audio
+ * Convert WAV to MULAW 8kHz base64 audio
  * @returns {Promise<string|null>} Base64 encoded MULAW audio or null if conversion fails
  */
 async function convertBeepToMulaw() {
-  const beepPath = path.join(__dirname, '..', 'beep.mp3');
+  // Try beep.wav first (pre-converted), fallback to beep.mp3 if not found
+  const beepWavPath = path.join(__dirname, '..', 'beep.wav');
+  const beepMp3Path = path.join(__dirname, '..', 'beep.mp3');
   
-  if (!fs.existsSync(beepPath)) {
-    console.error('Beep Service -> beep.mp3 not found'.yellow);
+  let wavPath;
+  if (fs.existsSync(beepWavPath)) {
+    wavPath = beepWavPath;
+    console.log('Beep Service -> Using pre-converted beep.wav'.green);
+  } else if (fs.existsSync(beepMp3Path)) {
+    console.warn('Beep Service -> beep.wav not found, beep.mp3 requires FFmpeg conversion (may fail on some systems)'.yellow);
+    return null; // MP3 conversion requires FFmpeg which may not work on all systems
+  } else {
+    console.error('Beep Service -> beep.wav or beep.mp3 not found'.yellow);
     return null;
   }
 
-  return new Promise((resolve, reject) => {
-    const wavPath = path.join(__dirname, '..', 'beep_temp.wav');
+  try {
+    // Read WAV file
+    const wavBuffer = fs.readFileSync(wavPath);
+    const wav = new WaveFile();
+    wav.fromBuffer(wavBuffer);
     
-    // Convert MP3 to WAV (8kHz, mono, 16-bit PCM)
-    ffmpeg(beepPath)
-      .audioFrequency(8000)
-      .audioChannels(1)
-      .audioCodec('pcm_s16le')
-      .format('wav')
-      .on('end', () => {
-        try {
-          // Read WAV file
-          const wavBuffer = fs.readFileSync(wavPath);
-          const wav = new WaveFile();
-          wav.fromBuffer(wavBuffer);
-          
-          // Get PCM samples
-          const pcm16 = wav.getSamples(false, Int16Array);
-          
-          // Convert to MULAW
-          const mu = new Uint8Array(pcm16.length);
-          for (let i = 0; i < pcm16.length; i++) {
-            mu[i] = linearToMuLawSample(pcm16[i]);
-          }
-          
-          // Convert to base64
-          const base64String = Buffer.from(mu).toString('base64');
-          
-          // Clean up temp file
-          fs.unlinkSync(wavPath);
-          
-          console.log('Beep Service -> Beep audio converted successfully'.green);
-          resolve(base64String);
-        } catch (error) {
-          console.error('Beep Service -> Error processing WAV:'.yellow, error);
-          // Clean up temp file on error
-          if (fs.existsSync(wavPath)) {
-            fs.unlinkSync(wavPath);
-          }
-          resolve(null);
-        }
-      })
-      .on('error', (err) => {
-        console.error('Beep Service -> FFmpeg conversion error:'.yellow, err.message);
-        // Clean up temp file on error
-        if (fs.existsSync(wavPath)) {
-          fs.unlinkSync(wavPath);
-        }
-        resolve(null);
-      })
-      .save(wavPath);
-  });
+    // Verify format
+    if (wav.fmt?.sampleRate !== 8000) {
+      console.warn(`Beep Service -> WAV sample rate is ${wav.fmt?.sampleRate}Hz, expected 8000Hz`.yellow);
+    }
+    
+    // Get PCM samples
+    const pcm16 = wav.getSamples(false, Int16Array);
+    
+    // Convert to MULAW
+    const mu = new Uint8Array(pcm16.length);
+    for (let i = 0; i < pcm16.length; i++) {
+      mu[i] = linearToMuLawSample(pcm16[i]);
+    }
+    
+    // Convert to base64
+    const base64String = Buffer.from(mu).toString('base64');
+    
+    console.log('Beep Service -> Beep audio converted successfully'.green);
+    return base64String;
+  } catch (error) {
+    console.error('Beep Service -> Error processing WAV:'.yellow, error);
+    return null;
+  }
 }
 
 /**

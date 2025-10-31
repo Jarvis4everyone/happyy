@@ -150,7 +150,7 @@ sfdrs.txt
 .env.local
 .env.*.local
 
-# Temporary audio files
+# Temporary audio files (keep beep.wav in repo, it's pre-converted)
 beep_temp.wav
 
 # End of https://www.toptal.com/developers/gitignore/api/node
