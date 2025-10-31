@@ -43,7 +43,15 @@ npm install
 
 3. **Configure environment variables**
 
-Create a `.env` file in the root directory:
+Copy the example environment file and fill in your values:
+
+```bash
+# Copy the example file
+cp .env.example .env
+# Or on Windows, copy .env.example to .env manually
+```
+
+Then edit the `.env` file and add your actual API keys:
 
 ```env
 # Server Configuration
