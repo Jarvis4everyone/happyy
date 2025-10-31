@@ -64,8 +64,15 @@ class TranscriptionService extends EventEmitter {
   setupEventHandlers() {
     this.dgConnection.on(LiveTranscriptionEvents.Open, () => {
       console.log('STT -> Deepgram connection OPEN'.yellow);
+      const wasReconnecting = this.reconnecting;
       this.ready = true;
       this.reconnecting = false;
+      
+      // Emit event for STT started (beep sound) - only if not a reconnection
+      if (!wasReconnecting) {
+        this.emit('sttStarted');
+      }
+      
       // Flush any buffered audio
       if (this.pendingPayloads.length > 0) {
         try {
@@ -192,6 +199,10 @@ class TranscriptionService extends EventEmitter {
     this.dgConnection.on(LiveTranscriptionEvents.Close, () => {
       console.log('STT -> Deepgram connection CLOSED'.yellow);
       this.ready = false;
+      
+      // Emit event for STT stopped (beep sound)
+      this.emit('sttStopped');
+      
       // Attempt to reconnect when connection closes unexpectedly
       this.reconnect();
     });
