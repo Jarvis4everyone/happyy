@@ -36,6 +36,16 @@
                         <h1>Happy AI</h1>
                         <span class="subtitle">Call Management System</span>
                     </div>
+                    <nav class="header-nav">
+                        <button class="nav-tab active" data-tab="calls">
+                            <span class="btn-icon">📞</span>
+                            Calls
+                        </button>
+                        <button class="nav-tab" data-tab="prompts">
+                            <span class="btn-icon">✏️</span>
+                            AI Prompts
+                        </button>
+                    </nav>
                     <button id="logoutBtn" class="btn btn-secondary">
                         <span class="btn-icon">🚪</span>
                         Logout
@@ -45,6 +55,8 @@
 
             <!-- Main Content -->
             <div class="dashboard-main">
+                <!-- Calls Tab Content -->
+                <div id="callsTab" class="tab-content active">
                 <!-- Left Sidebar - Call Controls -->
                 <aside class="sidebar">
                     <div class="card">
@@ -134,6 +146,69 @@
                         </div>
                     </div>
                 </main>
+                </div>
+
+                <!-- Prompts Tab Content -->
+                <div id="promptsTab" class="tab-content">
+                    <div class="prompt-editor-container">
+                        <div class="card full-width">
+                            <div class="card-header">
+                                <h2>✏️ AI Assistant Prompts</h2>
+                                <p class="card-subtitle">Edit the system prompt and assistant seed message that controls the AI's behavior</p>
+                            </div>
+                            <div class="card-body">
+                                <form id="promptForm">
+                                    <div class="form-group">
+                                        <label for="systemPrompt">
+                                            System Prompt
+                                            <small class="form-hint">(Instructions for the AI's behavior, personality, and guidelines)</small>
+                                        </label>
+                                        <textarea 
+                                            id="systemPrompt" 
+                                            rows="15" 
+                                            class="form-control prompt-textarea"
+                                            placeholder="Enter system prompt..."
+                                            required
+                                        ></textarea>
+                                        <div class="textarea-info">
+                                            <span id="systemPromptCount">0 characters</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="assistantPrompt">
+                                            Assistant Seed Message
+                                            <small class="form-hint">(The initial message the AI will say when a call starts)</small>
+                                        </label>
+                                        <textarea 
+                                            id="assistantPrompt" 
+                                            rows="5" 
+                                            class="form-control prompt-textarea"
+                                            placeholder="Enter assistant seed message..."
+                                            required
+                                        ></textarea>
+                                        <div class="textarea-info">
+                                            <span id="assistantPromptCount">0 characters</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-actions">
+                                        <button type="button" id="loadPromptsBtn" class="btn btn-secondary">
+                                            <span class="btn-icon">🔄</span>
+                                            Reload from Server
+                                        </button>
+                                        <button type="submit" id="savePromptsBtn" class="btn btn-primary">
+                                            <span class="btn-icon">💾</span>
+                                            Save Prompts
+                                        </button>
+                                    </div>
+
+                                    <div id="promptStatus" class="prompt-status"></div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

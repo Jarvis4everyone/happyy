@@ -257,3 +257,128 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Tab Navigation
+document.querySelectorAll('.nav-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        const targetTab = tab.getAttribute('data-tab');
+        
+        // Update active tab
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // Update active content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`${targetTab}Tab`).classList.add('active');
+        
+        // Load prompts when prompts tab is opened
+        if (targetTab === 'prompts') {
+            loadPrompts();
+        }
+    });
+});
+
+// Prompt Management
+async function loadPrompts() {
+    const promptStatus = document.getElementById('promptStatus');
+    const systemPrompt = document.getElementById('systemPrompt');
+    const assistantPrompt = document.getElementById('assistantPrompt');
+    
+    try {
+        promptStatus.className = 'prompt-status info';
+        promptStatus.textContent = 'Loading prompts...';
+        promptStatus.style.display = 'block';
+        
+        const response = await fetch('/api/prompt');
+        const data = await response.json();
+        
+        if (data.success && data.prompts) {
+            systemPrompt.value = data.prompts.systemPrompt || '';
+            assistantPrompt.value = data.prompts.assistantPrompt || '';
+            
+            updatePromptCounts();
+            
+            promptStatus.className = 'prompt-status success';
+            promptStatus.textContent = 'Prompts loaded successfully!';
+            setTimeout(() => {
+                promptStatus.style.display = 'none';
+            }, 2000);
+        } else {
+            throw new Error(data.error || 'Failed to load prompts');
+        }
+    } catch (error) {
+        console.error('Error loading prompts:', error);
+        promptStatus.className = 'prompt-status error';
+        promptStatus.textContent = `Error: ${error.message}`;
+    }
+}
+
+async function savePrompts() {
+    const promptStatus = document.getElementById('promptStatus');
+    const systemPrompt = document.getElementById('systemPrompt').value.trim();
+    const assistantPrompt = document.getElementById('assistantPrompt').value.trim();
+    
+    if (!systemPrompt || !assistantPrompt) {
+        promptStatus.className = 'prompt-status error';
+        promptStatus.textContent = 'Both prompts are required!';
+        promptStatus.style.display = 'block';
+        return;
+    }
+    
+    try {
+        promptStatus.className = 'prompt-status info';
+        promptStatus.textContent = 'Saving prompts...';
+        promptStatus.style.display = 'block';
+        
+        const response = await fetch('/api/prompt', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                systemPrompt,
+                assistantPrompt
+            }),
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            promptStatus.className = 'prompt-status success';
+            promptStatus.textContent = 'Prompts saved successfully! New calls will use the updated prompts.';
+            
+            // Reload prompts to confirm save
+            setTimeout(() => {
+                loadPrompts();
+            }, 1000);
+        } else {
+            throw new Error(data.error || 'Failed to save prompts');
+        }
+    } catch (error) {
+        console.error('Error saving prompts:', error);
+        promptStatus.className = 'prompt-status error';
+        promptStatus.textContent = `Error: ${error.message}`;
+    }
+}
+
+function updatePromptCounts() {
+    const systemPrompt = document.getElementById('systemPrompt').value;
+    const assistantPrompt = document.getElementById('assistantPrompt').value;
+    
+    document.getElementById('systemPromptCount').textContent = `${systemPrompt.length} characters`;
+    document.getElementById('assistantPromptCount').textContent = `${assistantPrompt.length} characters`;
+}
+
+// Prompt form event listeners
+document.getElementById('promptForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await savePrompts();
+});
+
+document.getElementById('loadPromptsBtn')?.addEventListener('click', loadPrompts);
+
+// Update character counts as user types
+document.getElementById('systemPrompt')?.addEventListener('input', updatePromptCounts);
+document.getElementById('assistantPrompt')?.addEventListener('input', updatePromptCounts);
+

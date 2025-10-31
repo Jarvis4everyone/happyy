@@ -11,6 +11,7 @@ const { StreamService } = require('./services/stream-service');
 const { TranscriptionService } = require('./services/transcription-service');
 const { TextToSpeechService } = require('./services/tts-service');
 const { recordingService } = require('./services/recording-service');
+const fs = require('fs');
 
 const VoiceResponse = require('twilio').twiml.VoiceResponse;
 
@@ -141,6 +142,50 @@ app.get('/api/calls', (req, res) => {
         ...data
     }));
     res.json({ calls });
+});
+
+// API endpoint to get current prompts
+app.get('/api/prompt', (req, res) => {
+    try {
+        const promptsPath = path.join(__dirname, 'prompts.json');
+        const promptsData = fs.readFileSync(promptsPath, 'utf8');
+        const prompts = JSON.parse(promptsData);
+        res.json({ success: true, prompts });
+    } catch (error) {
+        console.error('Error reading prompts:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// API endpoint to update prompts
+app.post('/api/prompt', (req, res) => {
+    try {
+        const { systemPrompt, assistantPrompt } = req.body;
+        
+        if (!systemPrompt || !assistantPrompt) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Both systemPrompt and assistantPrompt are required' 
+            });
+        }
+
+        const promptsPath = path.join(__dirname, 'prompts.json');
+        const prompts = {
+            systemPrompt: systemPrompt.trim(),
+            assistantPrompt: assistantPrompt.trim()
+        };
+
+        fs.writeFileSync(promptsPath, JSON.stringify(prompts, null, 2), 'utf8');
+        
+        broadcastLog('AI prompts updated successfully', 'success');
+        console.log('Prompts updated successfully'.green);
+        
+        res.json({ success: true, message: 'Prompts updated successfully' });
+    } catch (error) {
+        console.error('Error updating prompts:', error);
+        broadcastLog(`Error updating prompts: ${error.message}`, 'error');
+        res.status(500).json({ success: false, error: error.message });
+    }
 });
 
 app.post('/incoming', (req, res) => {
